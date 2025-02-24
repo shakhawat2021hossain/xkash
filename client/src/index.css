@@ -1,1 +1,13 @@
 @import "tailwindcss";
+
+@theme{
+    --color-primary: #1E40AF;          /* Dark Navy Blue - Trust, security */
+    --color-secondary: #059669;        /* Muted Emerald Green - Success, growth */
+    --color-accent: #7C3AED;           /* Vibrant Purple - Innovation, highlights */
+    --color-bg-light: #F3F4F6;         /* Light Gray - Background */
+    --color-text-dark: #000000;        /* Black - Primary text */
+    --color-text-muted: #6B7280;       /* Mid Gray - Secondary text */
+    --color-error: #EF4444;            /* Red - Errors */
+    --color-success: #059669;          /* Green - Success messages */
+    --color-warning: #F59E0B;         /* Amber - Warnings */
+}

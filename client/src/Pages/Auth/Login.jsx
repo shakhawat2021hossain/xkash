@@ -1,24 +1,30 @@
 import React from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import useAxiosPublic from "../../Hooks/useAxiosPublic";
+import toast from "react-hot-toast";
 
 const Login = () => {
   const axiosPublic = useAxiosPublic()
-  
+  const navigate = useNavigate()
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm();
 
-  const onSubmit = async(data) => {
-    console.log(data); 
-    try{
-      const result = await axiosPublic.post('/login', data)
-      console.log(result);
+  const onSubmit = async (data) => {
+    const loginInfo = data;
+    console.log(loginInfo);
+    try {
+      const { data } = await axiosPublic.post('/login', loginInfo, { withCredentials: true });
+      console.log(data);
+      toast.success("logged in")
+      navigate('/')
+
     }
-    catch(err){
+    catch (err) {
       console.log(err);
     }
 

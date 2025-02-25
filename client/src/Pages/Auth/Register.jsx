@@ -18,7 +18,7 @@ const Register = () => {
 
   const onSubmit = async (data) => {
     const accountInfo = { ...data, accountType }
-    // console.log(accountInfo);
+    console.log(accountInfo);
     try {
 
       const result = await axiosPublic.post('/register', accountInfo)

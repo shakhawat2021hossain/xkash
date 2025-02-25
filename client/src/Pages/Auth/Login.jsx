@@ -1,16 +1,27 @@
 import React from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
+import useAxiosPublic from "../../Hooks/useAxiosPublic";
 
 const Login = () => {
+  const axiosPublic = useAxiosPublic()
+  
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm();
 
-  const onSubmit = (data) => {
+  const onSubmit = async(data) => {
     console.log(data); 
+    try{
+      const result = await axiosPublic.post('/login', data)
+      console.log(result);
+    }
+    catch(err){
+      console.log(err);
+    }
+
   };
 
   return (

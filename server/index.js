@@ -77,8 +77,27 @@ app.post('/register', async (req, res) => {
     res.json({ msg: `${accountType} registered successfully` });
 })
 
+app.post('/login', async (req, res) => {
+    const { loginId, pin } = req.body;
+    const user = await Account.find({ $or: [{ mobile: loginId }, { email: loginId }] })
+    if (!user) return res.json({ msg: "No user Found" })
+
+    const match = await bcrypt.compare(pin, user.pin)
+    if (!match) return res.json({ msg: "invalid credentials" })
+
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" })
+
+    res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+    }).send({ success: true })
+})
 
 
+app.get('/protected', async(req, res) =>{
+    
+})
 
 app.listen(port, () => {
     console.log(`Server running from ${port}`);

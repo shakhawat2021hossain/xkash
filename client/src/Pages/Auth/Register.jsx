@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import useAxiosPublic from "../../Hooks/useAxiosPublic";
+import toast from "react-hot-toast";
 
 const Register = () => {
   const axiosPublic = useAxiosPublic()
+  const navigate = useNavigate()
 
   const {
     register,
@@ -16,10 +18,12 @@ const Register = () => {
 
   const onSubmit = async (data) => {
     const accountInfo = { ...data, accountType }
-    console.log(accountInfo);
+    // console.log(accountInfo);
     try {
-      
+
       const result = await axiosPublic.post('/register', accountInfo)
+      toast.success("Register Successfully")
+      navigate('/')
       console.log(result);
 
     }

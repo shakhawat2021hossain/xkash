@@ -19,8 +19,8 @@ const Register = () => {
     console.log(accountInfo);
     try {
       
-      // const result = await axiosPublic.post('/register', accountInfo)
-      // console.log(result);
+      const result = await axiosPublic.post('/register', accountInfo)
+      console.log(result);
 
     }
     catch (err) {

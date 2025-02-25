@@ -37,23 +37,48 @@ connectDb()
 
 // schemas
 const accountSchema = new mongoose.Schema({
-    name: {type: String, required: true},
-    pin: {type: String, required: true},
-    email: {type: String, required: true, unique: true},
-    mobileNumber: {type: String, required: true, unique: true},
-    nid: {type: String, required: true, unique: true},
-    role: {type: String, required: true, enum: ["user", "agent", "admin"]},
-    isApproved: {type: Boolean, required: true},
-    isBlocked: {type: Boolean, required: true},
-    balance: {type: Number},
-    income: {type: Number}
+    name: { type: String, required: true },
+    pin: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    mobile: { type: String, required: true, unique: true },
+    nid: { type: String, required: true, unique: true },
+    role: { type: String, required: true, enum: ["user", "agent", "admin"] },
+    isApproved: { type: Boolean, default: true },
+    isBlocked: { type: Boolean, default: false },
+    balance: { type: Number },
+    income: { type: Number }
 })
 const Account = mongoose.model("Account", accountSchema)
+
 
 app.get('/', (req, res) => {
     res.send("Hello there")
 
 })
+
+app.post('/register', async (req, res) => {
+    const { name, email, pin, mobile, nid, accountType } = req.body;
+
+    const isExist = await Account.findOne({ $or: [{ mobile }, { email }, { nid }] })
+    if (isExist) return res.json({ msg: 'Mobile number, email, or NID already exists' });
+
+    const salt = await bcrypt.genSalt(10)
+    const hashedPin = await bcrypt.hash(pin, salt)
+
+    const user = { name, email, pin: hashedPin, mobile, nid, role: accountType }
+    if (user.accountType === 'user') user.balance = 40;
+    if (accountType === 'agent') {
+        user.balance = 100000;
+        user.isApproved = false;
+    }
+
+    const newUser = new Account(user)
+    await newUser.save()
+    res.json({ msg: `${accountType} registered successfully` });
+})
+
+
+
 
 app.listen(port, () => {
     console.log(`Server running from ${port}`);

@@ -1,84 +1,91 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "./Logo";
 import useAuth from "../../Hooks/useAuth";
-import axios from "axios";
 import useAxiosPublic from "../../Hooks/useAxiosPublic";
 import { useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
 const Navbar = () => {
     const { user, isLoading } = useAuth();
-    console.log(user);
     const navigate = useNavigate();
-    const axiosPublic = useAxiosPublic()
-
+    const axiosPublic = useAxiosPublic();
     const [isOpen, setIsOpen] = useState(false);
+
     const toggleMenu = () => setIsOpen(!isOpen);
     const closeMenu = () => setIsOpen(false);
+    console.log(user);
 
     // Logout handler
-    const { mutateAsync} = useMutation({
+    const { mutateAsync } = useMutation({
         mutationFn: async () => {
-            const { data } = await axiosPublic.post('/logout', {})
-            return data
+            const { data } = await axiosPublic.post("/logout", {});
+            return data;
         },
         onSuccess: () => {
-            toast.success("Logged out Successfully")
-            navigate('/login')
-        }
-    })
+            toast.success("Logged out Successfully");
+            navigate("/login");
+        },
+    });
+
     const handleLogout = async () => {
-        await mutateAsync()
+        await mutateAsync();
     };
 
+    // Role-based navigation items with balance display
+    const getNavItems = () => {
+        if (!user || isLoading) {
+            return [
+                { to: "/login", label: "Login", isButton: false },
+                { to: "/register", label: "Register", isButton: true },
+            ];
+        }
+
+
+        switch (user.role) {
+            case "user":
+                return [
+                    { to: "/dashboard", label: "Dashboard", isButton: false },
+                    { to: "/send-money", label: "Send Money", isButton: false },
+                    { to: "/cash-out", label: "Cash Out", isButton: false },
+                    { to: "/profile", label: "Profile", isButton: false },
+                    { to: "", label: "Logout", isButton: true, onClick: handleLogout },
+                ];
+            case "agent":
+                return [
+                    { to: "/agent-dashboard", label: "Dashboard", isButton: false },
+                    { to: "/cash-in", label: "Cash In", isButton: false },
+                    { to: "/balance-request", label: "Balance Request", isButton: false },
+                    { to: "/profile", label: "Profile", isButton: false },
+                    { to: "", label: "Logout", isButton: true, onClick: handleLogout },
+                ];
+            case "admin":
+                return [
+                    { to: "/admin", label: "Dashboard", isButton: false },
+                    { to: "/admin/users", label: "Users", isButton: false },
+                    { to: "/admin/agent-approvals", label: "Agent Approvals", isButton: false },
+                    { to: "/admin/requests", label: "Requests", isButton: false },
+                    { to: "", label: "Logout", isButton: true, onClick: handleLogout },
+                ];
+            default:
+                return [];
+        }
+    };
+
+    const navItems = getNavItems();
 
     return (
-        <nav className="bg-white shadow-md border-b border-gray-200 sticky top-0 z-10">
+        <nav className="bg-white shadow-md border-b border-gray-200 sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     {/* Left Side: Logo */}
                     <Logo />
 
-                    {/* Right Side: Navigation Links */}
-                    <div className="hidden md:flex items-center space-x-8">
-                        {user ? (
-                            <>
-                                {/* Profile Link */}
-                                <Link
-                                    to="/profile"
-                                    className="text-[#111827] text-sm font-medium hover:text-[#1D4ED8] transition-colors duration-300"
-                                >
-                                    Profile
-                                </Link>
-                                {/* Logout Button */}
-                                <button
-                                    onClick={handleLogout}
-                                    className="bg-[#1D4ED8] text-white px-4 py-2 rounded-lg hover:bg-[#F59E0B] hover:shadow-md transition-all duration-300 font-semibold"
-                                >
-                                    Logout
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <Link
-                                    to="/login"
-                                    className="text-[#111827] text-sm font-medium hover:text-[#1D4ED8] transition-colors duration-300"
-                                >
-                                    Login
-                                </Link>
-                                <Link
-                                    to="/register"
-                                    className="bg-[#1D4ED8] text-white px-4 py-2 rounded-lg hover:bg-[#10B981] hover:shadow-md transition-all duration-300 font-semibold"
-                                >
-                                    Register
-                                </Link>
-                            </>
-                        )}
-                    </div>
 
-                    {/* Mobile Menu Button */}
-                    <div className="md:hidden flex items-center">
+
+                    {/* Toggle Button */}
+                    <div className="flex space-x-6 items-center">
+                        <span className="my-4 px-6 py-1 bg-emerald-200 rounded-full">Tk. {user?.balance}</span>
                         <button
                             onClick={toggleMenu}
                             className="text-[#1D4ED8] hover:text-[#F59E0B] transition-colors duration-300 focus:outline-none"
@@ -105,50 +112,42 @@ const Navbar = () => {
                     </div>
                 </div>
 
-                {/* Mobile Menu with Backdrop */}
+                {/* Toggle Menu */}
                 <div
-                    className={`md:hidden w-full h-screen absolute top-0 right-0 bg-opacity-50 bg-gray-800 z-20 transition-all duration-300 ${isOpen ? "block" : "hidden"
+                    className={`fixed inset-0 bg-gray-800 bg-opacity-50 z-40 transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
                         }`}
-                    onClick={closeMenu} // Close on clicking outside
+                    onClick={closeMenu}
                 >
-                    <div className="w-2/3 h-full bg-gray-100 p-4 space-y-4 border-t border-gray-200">
-                        {user ? (
-                            <>
-                                <Link
-                                    to="/profile"
-                                    className="block text-[#111827] hover:text-[#1D4ED8] transition-colors duration-300 text-lg font-semibold"
-                                    onClick={closeMenu}
-                                >
-                                    Profile
-                                </Link>
-                                <button
-                                    onClick={() => {
-                                        handleLogout();
-                                        closeMenu();
-                                    }}
-                                    className="block w-full text-left bg-[#1D4ED8] text-white px-4 py-2 rounded-lg hover:bg-[#F59E0B] hover:shadow-md transition-all duration-300 font-semibold text-lg"
-                                >
-                                    Logout
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <Link
-                                    to="/login"
-                                    className="block text-[#111827] hover:text-[#1D4ED8] transition-colors duration-300 text-lg font-semibold"
-                                    onClick={closeMenu}
-                                >
-                                    Login
-                                </Link>
-                                <Link
-                                    to="/register"
-                                    className="block bg-[#1D4ED8] text-white px-4 py-2 rounded-lg hover:bg-[#10B981] hover:shadow-md transition-all duration-300 font-semibold text-lg"
-                                    onClick={closeMenu}
-                                >
-                                    Register
-                                </Link>
-                            </>
-                        )}
+                    <div
+                        className={`fixed top-16 right-0 w-64 h-[calc(100vh-4rem)] bg-white shadow-lg transform transition-transform duration-300 ${isOpen ? "translate-x-0" : "translate-x-full"
+                            }`}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="p-4 space-y-4">
+                            {navItems.map((item, index) =>
+                                item.isButton ? (
+                                    <button
+                                        key={index}
+                                        onClick={() => {
+                                            item.onClick?.();
+                                            closeMenu();
+                                        }}
+                                        className="block w-full text-left bg-[#1D4ED8] text-white px-4 py-2 rounded-lg hover:bg-[#F59E0B] transition-all duration-300 font-semibold"
+                                    >
+                                        {item.label}
+                                    </button>
+                                ) : (
+                                    <Link
+                                        key={index}
+                                        to={item.to}
+                                        className="block w-full text-[#111827] hover:text-[#1D4ED8] px-4 py-2 rounded-lg transition-colors duration-300 font-semibold"
+                                        onClick={closeMenu}
+                                    >
+                                        {item.label}
+                                    </Link>
+                                )
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

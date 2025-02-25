@@ -3,24 +3,29 @@ import Main from '../Layouts/Main'
 import Login from '../Pages/Auth/Login'
 import Register from '../Pages/Auth/Register'
 import Home from '../Pages/Home/Home'
+import SendMoney from '../Pages/User/SendMoney'
 
 export const router = createBrowserRouter([
     {
         path: '/',
-        element: <Main/>,
+        element: <Main />,
         children: [
             {
                 path: '/',
-                element: <Home/>
-            }
+                element: <Home />
+            },
+            {
+                path: '/send-money',
+                element: <SendMoney />
+            },
         ]
     },
     {
         path: '/login',
-        element: <Login/>
+        element: <Login />
     },
     {
         path: '/register',
-        element: <Register/>
+        element: <Register />
     },
 ])

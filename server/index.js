@@ -36,8 +36,8 @@ const verifyToken = (req, res, next) => {
         if (err) {
             return res.status(403).json({ msg: "Invalid token" });
         }
-        console.log("verifytoken", decoded);
-   
+        // console.log("verifytoken", decoded);
+
         req.userId = decoded.id;
         next();
     });
@@ -71,6 +71,18 @@ const accountSchema = new mongoose.Schema({
 });
 const Account = mongoose.model("Account", accountSchema)
 
+const transactionSchema = new mongoose.Schema({
+    sender: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    receiver: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    amount: Number,
+    fee: Number,
+    transactionType: { type: String, enum: ["sendMoney"], default: "sendMoney" },
+    timestamp: { type: Date, default: Date.now }
+});
+
+const Transaction = mongoose.model("Transaction", transactionSchema);
+
+
 
 app.get('/', (req, res) => {
     res.send("Hello there")
@@ -103,7 +115,7 @@ app.post('/register', async (req, res) => {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-    }).json({ success: true, user }); 
+    }).json({ success: true, user });
 })
 
 app.post('/login', async (req, res) => {
@@ -150,6 +162,94 @@ app.post('/logout', async (req, res) => {
     } catch (err) {
         res.status(500).send(err)
     }
+})
+
+
+
+async function seedAdmin() {
+    try {
+
+        const existingAdmin = await Account.findOne({ accountType: 'admin' });
+        if (existingAdmin) {
+            console.log('Admin user already exists');
+            process.exit(0);
+        }
+
+        const hashedPin = await bcrypt.hash('12345', 8); // Default PIN
+        const admin = new Account({
+            name: 'Admin',
+            pin: hashedPin,
+            mobile: '01700000000',
+            email: 'admin@mfs.com',
+            nid: '1234567890',
+            accountType: 'admin',
+            balance: 0,
+            income: 0,
+            isApproved: true,
+            isBlocked: false
+        });
+
+        await admin.save();
+
+
+    } catch (error) {
+        console.error('Error creating admin:', error);
+    }
+}
+
+// seedAdmin();
+
+// send money
+app.post('/send-money', verifyToken, async (req, res) => {
+    const { recipientMobile, amount } = req.body;
+    const parsedAmount = parseFloat(amount);
+
+    const senderId = req.userId;
+    const sender = await Account.findById(senderId)
+    if (!sender) return res.json({ msg: "No account found for the number" })
+
+
+    const receiver = await Account.findOne({ mobile: recipientMobile })
+    if (!receiver) return res.status(404).json({ msg: "Receiver not found" })
+
+    console.log(`Reciever:${receiver}, Sender: ${sender}`);
+
+    if (receiver._id.toString() === sender._id.toString()) return res.json({ msg: "you cant send money yourself" })
+
+    const fee = parsedAmount > 100 ? 5 : 0;
+    const totalDeduction = parsedAmount + fee;
+
+    if (sender.balance < totalDeduction) {
+        return res.status(400).send({ error: 'Insufficient balance' });
+    }
+
+    const admin = await Account.findOne({ role: 'admin' })
+    if (!admin) return res.status(404).json({ msg: "Admin not found" })
+
+    // Update balances
+    sender.balance -= totalDeduction;
+    receiver.balance += parsedAmount;
+    admin.balance += fee;
+    admin.income += fee;
+
+    const transaction = new Transaction({
+        sender: sender._id,
+        receiver: receiver._id,
+        amount: parsedAmount,
+        fee,
+        transactionType: "sendMoney"
+    });
+
+    await Promise.all([sender.save(), receiver.save(), admin.save(), transaction.save()]);
+
+    res.status(200).json({
+        msg: "Transaction successful!",
+        transactionId: transaction._id,
+        senderBalance: sender.balance,
+    });
+
+
+
 })
 
 app.listen(port, () => {

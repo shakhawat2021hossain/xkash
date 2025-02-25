@@ -1,41 +1,81 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
+import useAxiosPublic from "../../Hooks/useAxiosPublic";
 
 const Register = () => {
+  const axiosPublic = useAxiosPublic()
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-    watch,
   } = useForm();
 
-  const onSubmit = (data) => {
-    console.log(data);
+  const [accountType, setAccountType] = useState("user");
+
+  const onSubmit = async (data) => {
+    const accountInfo = { ...data, accountType }
+    console.log(accountInfo);
+    try {
+      
+      // const result = await axiosPublic.post('/register', accountInfo)
+      // console.log(result);
+
+    }
+    catch (err) {
+      console.log(err);
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-light">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-lg">
-        <h2 className="text-2xl font-bold mb-6 text-primary text-center">
-          Registration
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-6 text-center text-primary">
+          {accountType === "user" ? "User Registration" : "Agent Registration"}
         </h2>
+
+        {/* Toggle Buttons */}
+        <div className="flex justify-center mb-4">
+          <button
+            className={`px-4 py-2 mx-2 rounded-md ${accountType === "user" ? "bg-primary text-white" : "bg-gray-200"
+              }`}
+            onClick={() => setAccountType("user")}
+          >
+            User
+          </button>
+          <button
+            className={`px-4 py-2 mx-2 rounded-md ${accountType === "agent" ? "bg-primary text-white" : "bg-gray-200"
+              }`}
+            onClick={() => setAccountType("agent")}
+          >
+            Agent
+          </button>
+        </div>
+
         <form onSubmit={handleSubmit(onSubmit)}>
           {/* Name */}
           <div className="mb-4">
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-              Full Name
-            </label>
+            <label className="block text-sm font-medium text-gray-700">Full Name</label>
             <input
               type="text"
-              id="name"
               placeholder="John Cena"
               {...register("name", { required: "Name is required" })}
-              className="mt-1 p-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+              className="mt-1 p-2 w-full border border-gray-300 rounded-md"
             />
-            {errors.name && (
-              <p className="text-error text-sm mt-1">{errors.name.message}</p>
-            )}
+            {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
+          </div>
+
+          {/* Email */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <input
+              type="email"
+              placeholder="example@mail.com"
+              {...register("email", { required: "Email is required" })}
+              className="mt-1 p-2 w-full border border-gray-300 rounded-md"
+            />
+            {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
           </div>
 
           {/* 5-Digit PIN */}
@@ -92,57 +132,12 @@ const Register = () => {
             )}
           </div>
 
-          {/* Email */}
-          <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              placeholder="xkash@mfs.com"
-              {...register("email", {
-                required: "Email is required",
-                pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: "Invalid email address",
-                },
-              })}
-              className="mt-1 p-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
-            />
-            {errors.email && (
-              <p className="text-error text-sm mt-1">{errors.email.message}</p>
-            )}
-          </div>
-
-          {/* Account Type*/}
-          <div className="mb-4">
-            <label htmlFor="accountType" className="block text-sm font-medium text-gray-700">
-              Account Type
-            </label>
-            <select
-              id="accountType"
-              {...register("accountType", { required: "Account Type is required" })}
-              className="mt-1 p-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
-            >
-              <option value="">Select Account Type</option>
-              <option value="agent">Agent</option>
-              <option value="user">User</option>
-            </select>
-            {errors.accountType && (
-              <p className="text-error text-sm mt-1">{errors.accountType.message}</p>
-            )}
-          </div>
-
           {/* NID */}
-          <div className="mb-6">
-            <label htmlFor="nid" className="block text-sm font-medium text-gray-700">
-              NID
-            </label>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">NID</label>
             <input
               type="text"
-              id="nid"
-              placeholder="Enter you NID"
+              placeholder="Enter your NID"
               {...register("nid", {
                 required: "NID is required",
                 pattern: {
@@ -150,26 +145,22 @@ const Register = () => {
                   message: "NID must be 10 digits",
                 },
               })}
-              className="mt-1 p-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+              className="mt-1 p-2 w-full border border-gray-300 rounded-md"
             />
-            {errors.nid && (
-              <p className="text-error text-sm mt-1">{errors.nid.message}</p>
-            )}
+            {errors.nid && <p className="text-red-500 text-sm">{errors.nid.message}</p>}
           </div>
 
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primary-dark transition-colors"
+            className="w-full bg-primary text-white py-2 rounded-md hover:bg-primary-dark"
           >
             Register
           </button>
         </form>
-        <p className="mt-4 text-center text-text-muted">
-          Already have an account?{" "}
-          <Link to="/login" className="text-secondary hover:underline">
-            Login
-          </Link>
+
+        <p className="mt-4 text-center">
+          Already have an account? <Link to="/login" className="text-secondary hover:underline">Login</Link>
         </p>
       </div>
     </div>

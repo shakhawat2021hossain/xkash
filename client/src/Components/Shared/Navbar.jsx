@@ -63,7 +63,7 @@ const Navbar = () => {
             case "admin":
                 return [
                     { to: "/admin", label: "Dashboard", isButton: false },
-                    { to: "/admin/users", label: "Users", isButton: false },
+                    { to: "/users", label: "Users", isButton: false },
                     { to: "/admin/agent-approvals", label: "Agent Approvals", isButton: false },
                     { to: "/admin/requests", label: "Requests", isButton: false },
                     { to: "", label: "Logout", isButton: true, onClick: handleLogout },

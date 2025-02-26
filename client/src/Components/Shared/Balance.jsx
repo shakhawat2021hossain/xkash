@@ -1,19 +1,14 @@
 import React, { useState } from 'react';
-import useAuth from '../../Hooks/useAuth';
 import useBalance from '../../Hooks/useBalance';
 
 const Balance = () => {
-    const {user} = useAuth()
-    const [isBlurred, setIsBlurred] = useState(false);
+    const [isBlurred, setIsBlurred] = useState(true);
 
     const handleBalanceClick = () => {
         setIsBlurred(false);
-        // setTimeout(() =>{setIsBlurred(true)}, 4000)
+        setTimeout(() => { setIsBlurred(true) }, 4000)
     };
-    const {balance} = useBalance()
-
-
-
+    const { balance } = useBalance()
 
     return (
         <span

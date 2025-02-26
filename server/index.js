@@ -43,6 +43,13 @@ const verifyToken = (req, res, next) => {
     });
 };
 
+const verifyAdmin = async (req, res, next) => {
+    const id = req.userId;
+    const admin = await Account.findById(id)
+    if (!admin || admin.role !== 'admin') return res.status(404).json({ msg: "unauthorized access" })
+    next()
+}
+
 
 const connectDb = async () => {
     try {
@@ -166,7 +173,7 @@ app.post('/logout', async (req, res) => {
 
 
 
-async function seedAdmin() {
+const seedAdmin = async () => {
     try {
 
         const existingAdmin = await Account.findOne({ accountType: 'admin' });
@@ -175,7 +182,7 @@ async function seedAdmin() {
             process.exit(0);
         }
 
-        const hashedPin = await bcrypt.hash('12345', 8); // Default PIN
+        const hashedPin = await bcrypt.hash('12345', 8);
         const admin = new Account({
             name: 'Admin',
             pin: hashedPin,
@@ -395,6 +402,35 @@ app.post('/cash-in', verifyToken, async (req, res) => {
         res.status(500).json({ msg: 'Server error' });
     }
 });
+
+
+app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
+    try {
+        const users = await Account.find({}, '-pin')
+        res.json(users)
+
+    }
+    catch (error) {
+        console.log(error);
+    }
+})
+
+app.patch('/user/:id', verifyToken, verifyAdmin, async (req, res) => {
+    const id = req.params.id;
+    const { isBlocked } = req.body;
+    console.log(isBlocked);
+
+    const user = await Account.findById(id)
+    if (!user) return res.status(404).json({ msg: "user not found" })
+    if (user.role === 'admin') return res.status(403).json({ msg: 'Cannot block/unblock an admin' });
+
+    user.isBlocked = isBlocked;
+    user.save()
+    res.status(200).json({ msg: `User ${isBlocked ? 'blocked' : 'unblocked'} successfully` })
+
+})
+
+
 
 app.listen(port, () => {
     console.log(`Server running from ${port}`);

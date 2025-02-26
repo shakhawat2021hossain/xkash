@@ -6,6 +6,7 @@ import useAxiosPublic from "../../Hooks/useAxiosPublic";
 import { useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import Balance from "./Balance";
+import Loading from "./Loading";
 
 const Navbar = () => {
     const { user, isLoading } = useAuth();
@@ -64,7 +65,7 @@ const Navbar = () => {
                 return [
                     { to: "/admin", label: "Dashboard", isButton: false },
                     { to: "/users", label: "Users", isButton: false },
-                    { to: "/admin/agent-approvals", label: "Agent Approvals", isButton: false },
+                    { to: "/agent-approval", label: "Agent Approvals", isButton: false },
                     { to: "/admin/requests", label: "Requests", isButton: false },
                     { to: "", label: "Logout", isButton: true, onClick: handleLogout },
                 ];
@@ -86,7 +87,9 @@ const Navbar = () => {
 
                     {/* Toggle Button */}
                     <div className="flex space-x-6 items-center">
-                        <Balance/>
+                        {
+                            !isLoading && user && <Balance />
+                        }
                         <button
                             onClick={toggleMenu}
                             className="text-[#1D4ED8] hover:text-[#F59E0B] transition-colors duration-300 focus:outline-none"

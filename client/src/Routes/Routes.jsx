@@ -7,6 +7,11 @@ import SendMoney from '../Pages/User/SendMoney'
 import CashOut from '../Pages/User/CashOut'
 import CashIn from '../Pages/Agent/CashIn'
 import UserManagement from '../Pages/Admin/UserManagement'
+import AgentApproval from '../Pages/Admin/AgentApproval'
+import PrivateRoute from './PrivateRoute'
+import AdminRoute from './AdminRoute'
+import AgentRoute from './AgentRoute'
+import AdminDashboard from '../Pages/Admin/AdminDashboard'
 
 export const router = createBrowserRouter([
     {
@@ -19,19 +24,27 @@ export const router = createBrowserRouter([
             },
             {
                 path: '/send-money',
-                element: <SendMoney />
+                element: <PrivateRoute><SendMoney /></PrivateRoute>
             },
             {
                 path: '/cashout',
-                element: <CashOut />
+                element: <PrivateRoute><CashOut /></PrivateRoute>
             },
             {
                 path: '/cash-in',
-                element: <CashIn />
+                element: <AgentRoute><CashIn /></AgentRoute>
             },
             {
                 path: '/users',
-                element: <UserManagement />
+                element: <AdminRoute><UserManagement /></AdminRoute>
+            },
+            {
+                path: '/agent-approval',
+                element: <AdminRoute><AgentApproval /></AdminRoute>
+            },
+            {
+                path: '/admin',
+                element: <AdminRoute><AdminDashboard /></AdminRoute>
             },
         ]
     },

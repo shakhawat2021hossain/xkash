@@ -16,13 +16,16 @@ const Login = () => {
 
   const onSubmit = async (data) => {
     const loginInfo = data;
-    console.log(loginInfo);
+    // console.log(loginInfo);
     try {
-      const { data } = await axiosPublic.post('/login', loginInfo, { withCredentials: true });
-      console.log(data);
-      toast.success("logged in")
-      navigate('/')
-
+      const { data } = await axiosPublic.post('/login', loginInfo);
+      if (data.success) {
+        toast.success("logged in")
+        navigate('/')
+      }
+      else {
+        toast.error(data?.msg || "Login Failed")
+      }
     }
     catch (err) {
       console.log(err);

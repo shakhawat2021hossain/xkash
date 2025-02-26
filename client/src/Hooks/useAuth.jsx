@@ -9,7 +9,8 @@ const useAuth = () => {
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                const { data } = await axiosPublic.get('/protected', { withCredentials: true });
+                const { data } = await axiosPublic.get('/protected');
+                // console.log(data.user);
                 setUser(data.user);
             } catch (error) {
                 setUser(null);

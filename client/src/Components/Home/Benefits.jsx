@@ -64,18 +64,7 @@ const Benefits = () => {
                     ))}
                 </div>
 
-                {/* CTA */}
-                <div className="text-center mt-12">
-                    <p className="text-lg text-[#111827]/80 mb-4">
-                        Ready to enjoy these benefits?
-                    </p>
-                    <Link
-                        to="/register"
-                        className="bg-[#1D4ED8] text-white px-8 py-4 rounded-lg hover:bg-[#10B981] transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-                    >
-                        Sign Up Now
-                    </Link>
-                </div>
+            
             </div>
         </section>
     );

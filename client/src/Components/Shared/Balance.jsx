@@ -20,7 +20,7 @@ const Balance = () => {
                 transition: 'filter 0.3s ease'
             }}
         >
-            Tk. {isBlurred ? 'XXXX' : balance || '0'}
+            Tk. {balance || '0'}
         </span>
     );
 

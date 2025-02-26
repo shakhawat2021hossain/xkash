@@ -98,7 +98,7 @@ app.get('/', (req, res) => {
 
 app.post('/register', async (req, res) => {
     const newUser = req.body;
-    console.log(newUser);
+    // console.log(newUser);
     const { name, email, pin, mobile, nid, accountType } = newUser
 
     const isExist = await Account.findOne({ $or: [{ mobile }, { email }, { nid }] })
@@ -110,7 +110,7 @@ app.post('/register', async (req, res) => {
     const user = new Account({ name, email, pin: hashedPin, mobile, nid, role: accountType })
     if (accountType === 'user') user.balance = 40;
     if (accountType === 'agent') {
-        user.balance = 100000;
+        user.balance = 0;
         user.isApproved = false;
     }
 
@@ -127,26 +127,33 @@ app.post('/register', async (req, res) => {
 
 app.post('/login', async (req, res) => {
     const { loginId, pin } = req.body;
-    const user = await Account.findOne({ $or: [{ mobile: loginId }, { email: loginId }] })
-    if (!user) return res.json({ msg: "No user Found" })
+    // console.log(loginId);
+    try {
+        const user = await Account.findOne({ $or: [{ mobile: loginId }, { email: loginId }] })
+        if (!user) return res.json({ msg: "No user Found" })
 
-    const match = bcrypt.compare(pin, user.pin)
-    if (!match) return res.json({ msg: "invalid credentials" })
+        const match = await bcrypt.compare(pin, user.pin)
+        if (!match) return res.json({ msg: "invalid credentials" })
 
-    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" })
+        const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" })
 
-    res.cookie('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-    }).send({ success: true, user })
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+        }).send({ success: true, user })
+    }
+    catch (error) {
+        console.log(error);
+    }
+
 })
 
 // get user info
 app.get('/protected', verifyToken, async (req, res) => {
     try {
         const user = await Account.findById(req.userId).select("-pin");
-        console.log(user);
+        // console.log(user);
         if (!user) {
             return res.status(404).json({ msg: "User not found" });
         }
@@ -176,7 +183,7 @@ app.post('/logout', async (req, res) => {
 const seedAdmin = async () => {
     try {
 
-        const existingAdmin = await Account.findOne({ accountType: 'admin' });
+        const existingAdmin = await Account.findOne({ role: 'admin' });
         if (existingAdmin) {
             console.log('Admin user already exists');
             process.exit(0);
@@ -234,7 +241,7 @@ app.post('/send-money', verifyToken, async (req, res) => {
     const receiver = await Account.findOne({ mobile: recipientMobile })
     if (!receiver) return res.status(404).json({ msg: "Receiver not found" })
 
-    console.log(`Reciever:${receiver}, Sender: ${sender}`);
+    // console.log(`Reciever:${receiver}, Sender: ${sender}`);
 
     if (receiver._id.toString() === sender._id.toString()) return res.json({ msg: "you cant send money yourself" })
 
@@ -283,7 +290,7 @@ app.post('/cash-out', verifyToken, async (req, res) => {
         }
 
         // Verify PIN
-        const isPinValid = bcrypt.compare(pin, sender.pin);
+        const isPinValid = await bcrypt.compare(pin, sender.pin);
         if (!isPinValid) {
             return res.status(400).json({ msg: "Invalid PIN" });
         }
@@ -356,7 +363,7 @@ app.post('/cash-in', verifyToken, async (req, res) => {
         }
 
         // verify PIN
-        const isPinValid = bcrypt.compare(pin, agent.pin);
+        const isPinValid = await bcrypt.compare(pin, agent.pin);
         if (!isPinValid) {
             return res.status(400).json({ msg: 'Invalid PIN' });
         }
@@ -430,7 +437,69 @@ app.patch('/user/:id', verifyToken, verifyAdmin, async (req, res) => {
 
 })
 
+// pending agents
+app.get('/pending-agents', verifyToken, verifyAdmin, async (req, res) => {
+    try {
+        const pendingAgents = await Account.find({
+            role: 'agent',
+            isApproved: false
+        }).select('name mobile email nid balance income isApproved');
+        res.status(200).json(pendingAgents);
 
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: 'Server error' });
+    }
+});
+
+// agent approval
+app.patch('/agents/:id', verifyToken, verifyAdmin, async (req, res) => {
+    const { isApproved } = req.body;
+    console.log(isApproved);
+
+    try {
+        const agent = await Account.findById(req.params.id);
+        if (!agent || agent.role !== 'agent') {
+            return res.status(404).json({ msg: 'Agent not found' });
+        }
+
+        if (agent.isApproved === isApproved) {
+            return res.status(400).json({ msg: `Agent is already ${isApproved ? 'approved' : 'pending/rejected'}` });
+        }
+
+        agent.isApproved = isApproved;
+        if (isApproved) {
+            agent.balance = 100000;
+        }
+        await agent.save();
+
+        res.status(200).json({
+            msg: `Agent ${isApproved ? 'approved' : 'rejected'} successfully`,
+            agent
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: 'Server error' });
+    }
+});
+
+// Add this route in your existing server file
+app.get('/system-stats', verifyToken, verifyAdmin, async (req, res) => {
+    try {
+        const users = await Account.find({ role: { $in: ['user', 'agent'] } });
+        const totalMoney = users.reduce((sum, user) => sum + user.balance, 0);
+        const admin = await Account.findById(req.userId);
+        if (!admin) return res.status(404).json({ msg: 'Admin not found' });
+
+        res.status(200).json({
+            adminIncome: admin.income,
+            totalMoneyInSystem: totalMoney,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: 'Server error' });
+    }
+});
 
 app.listen(port, () => {
     console.log(`Server running from ${port}`);

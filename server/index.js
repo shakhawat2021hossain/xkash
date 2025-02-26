@@ -199,6 +199,21 @@ async function seedAdmin() {
 
 // seedAdmin();
 
+
+// balance
+app.get('/balance', verifyToken, async (req, res) => {
+    const id = req.userId;
+    try {
+        const user = await Account.findById(id)
+        if (!user) return res.status(404).json({ msg: "User not found" })
+
+        res.status(200).json({ balance: user.balance })
+    }
+    catch (error) {
+        console.error(error)
+    }
+})
+
 // send money
 app.post('/send-money', verifyToken, async (req, res) => {
     const { recipientMobile, amount } = req.body;
@@ -318,6 +333,66 @@ app.post('/cash-out', verifyToken, async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ msg: "Server error" });
+    }
+});
+
+
+// cash in
+app.post('/cash-in', verifyToken, async (req, res) => {
+    const { userMobile, amount, pin } = req.body;
+    const parsedAmount = parseFloat(amount);
+
+    try {
+        const agent = await Account.findById(req.userId);
+        if (!agent || agent.role !== 'agent' || !agent.isApproved || agent.isBlocked) {
+            return res.status(403).json({ msg: 'Unauthorized' });
+        }
+
+        // verify PIN
+        const isPinValid = bcrypt.compare(pin, agent.pin);
+        if (!isPinValid) {
+            return res.status(400).json({ msg: 'Invalid PIN' });
+        }
+
+        if (!parsedAmount || parsedAmount <= 0) {
+            return res.status(400).json({ msg: 'Amount must be greater than 0' });
+        }
+
+        // agents balance
+        if (agent.balance < parsedAmount) {
+            return res.status(400).json({ msg: 'Insufficient balance' });
+        }
+
+        // Find the receiver
+        const user = await Account.findOne({ mobile: userMobile, role: 'user' });
+        if (!user || user.isBlocked) {
+            return res.status(404).json({ msg: 'User not found or blocked' });
+        }
+
+        // update balances
+        agent.balance -= parsedAmount;
+        user.balance += parsedAmount;
+
+        // create transaction
+        const transaction = new Transaction({
+            sender: agent._id,
+            receiver: user._id,
+            amount: parsedAmount,
+            fee: 0,
+            transactionType: 'cashIn',
+        });
+
+        // Save all updates
+        await Promise.all([agent.save(), user.save(), transaction.save()]);
+
+        res.status(200).json({
+            msg: 'Cash-in successful!',
+            transactionId: transaction._id,
+            agentBalance: agent.balance,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: 'Server error' });
     }
 });
 

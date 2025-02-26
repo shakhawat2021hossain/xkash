@@ -5,6 +5,7 @@ import Register from '../Pages/Auth/Register'
 import Home from '../Pages/Home/Home'
 import SendMoney from '../Pages/User/SendMoney'
 import CashOut from '../Pages/User/CashOut'
+import CashIn from '../Pages/Agent/CashIn'
 
 export const router = createBrowserRouter([
     {
@@ -22,6 +23,10 @@ export const router = createBrowserRouter([
             {
                 path: '/cashout',
                 element: <CashOut />
+            },
+            {
+                path: '/cash-in',
+                element: <CashIn />
             },
         ]
     },

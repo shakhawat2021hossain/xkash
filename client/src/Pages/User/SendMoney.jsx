@@ -22,7 +22,7 @@ const SendMoney = () => {
     const { mutateAsync, isLoading } = useMutation({
         mutationFn: async (transaction) => {
             const { data } = await axiosPublic.post("/send-money", transaction);
-            console.log(data);
+            // console.log(data);
             return data;
         },
         onSuccess: (data) => {

@@ -5,6 +5,7 @@ import useAuth from "../../Hooks/useAuth";
 import useAxiosPublic from "../../Hooks/useAxiosPublic";
 import { useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import Balance from "./Balance";
 
 const Navbar = () => {
     const { user, isLoading } = useAuth();
@@ -14,7 +15,7 @@ const Navbar = () => {
 
     const toggleMenu = () => setIsOpen(!isOpen);
     const closeMenu = () => setIsOpen(false);
-    console.log(user);
+    // console.log(user);
 
     // Logout handler
     const { mutateAsync } = useMutation({
@@ -47,7 +48,7 @@ const Navbar = () => {
                 return [
                     { to: "/dashboard", label: "Dashboard", isButton: false },
                     { to: "/send-money", label: "Send Money", isButton: false },
-                    { to: "/cash-out", label: "Cash Out", isButton: false },
+                    { to: "/cashout", label: "Cash Out", isButton: false },
                     { to: "/profile", label: "Profile", isButton: false },
                     { to: "", label: "Logout", isButton: true, onClick: handleLogout },
                 ];
@@ -85,7 +86,7 @@ const Navbar = () => {
 
                     {/* Toggle Button */}
                     <div className="flex space-x-6 items-center">
-                        <span className="my-4 px-6 py-1 bg-emerald-200 rounded-full">Tk. {user?.balance}</span>
+                        <Balance/>
                         <button
                             onClick={toggleMenu}
                             className="text-[#1D4ED8] hover:text-[#F59E0B] transition-colors duration-300 focus:outline-none"

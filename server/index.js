@@ -67,16 +67,16 @@ const accountSchema = new mongoose.Schema({
     isApproved: { type: Boolean, default: true },
     isBlocked: { type: Boolean, default: false },
     balance: Number,
-    income: Number
+    income: { type: Number, default: 0 }
 });
 const Account = mongoose.model("Account", accountSchema)
 
 const transactionSchema = new mongoose.Schema({
-    sender: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    receiver: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    sender: { type: mongoose.Schema.Types.ObjectId, ref: "Account" },
+    receiver: { type: mongoose.Schema.Types.ObjectId, ref: "Account" },
     amount: Number,
     fee: Number,
-    transactionType: { type: String, enum: ["sendMoney"], default: "sendMoney" },
+    transactionType: { type: String, enum: ["sendMoney", "cashOut", "cashIn"], required: true },
     timestamp: { type: Date, default: Date.now }
 });
 
@@ -247,10 +247,79 @@ app.post('/send-money', verifyToken, async (req, res) => {
         transactionId: transaction._id,
         senderBalance: sender.balance,
     });
-
-
-
 })
+
+// Cash-Out Route
+app.post('/cash-out', verifyToken, async (req, res) => {
+    const { agentMobile, amount, pin } = req.body;
+    const parsedAmount = parseFloat(amount);
+    // console.log(req.body);
+    try {
+        const sender = await Account.findById(req.userId);
+        if (!sender || sender.role !== 'user' || sender.isBlocked) {
+            return res.status(403).json({ msg: "Unauthorized or blocked user" });
+        }
+
+        // Verify PIN
+        const isPinValid = bcrypt.compare(pin, sender.pin);
+        if (!isPinValid) {
+            return res.status(400).json({ msg: "Invalid PIN" });
+        }
+
+        // minimum amount
+        if (parsedAmount < 50) {
+            return res.status(400).json({ msg: "Minimum cash-out amount is 50 Taka" });
+        }
+
+        // calculate fee (1.5%)
+        const fee = parsedAmount * 0.015;
+        const totalDeduction = parsedAmount + fee;
+
+        // sender balance
+        if (sender.balance < totalDeduction) {
+            return res.status(400).json({ msg: "Insufficient balance" });
+        }
+
+        // ADD: isApproved: true
+        const agent = await Account.findOne({ mobile: agentMobile, role: 'agent' });
+        if (!agent) {
+            return res.status(404).json({ msg: "Agent not found or not approved" });
+        }
+
+        // Find admin
+        const admin = await Account.findOne({ role: 'admin' });
+        if (!admin) {
+            return res.status(404).json({ msg: "Admin not found" });
+        }
+
+        // update balances and incomes
+        sender.balance -= totalDeduction;
+        agent.balance += parsedAmount;
+        agent.income += parsedAmount * 0.01;
+        admin.income += parsedAmount * 0.005;
+
+        // create transaction
+        const transaction = new Transaction({
+            sender: sender._id,
+            receiver: agent._id,
+            amount: parsedAmount,
+            fee,
+            transactionType: "cashOut"
+        });
+
+        // Save all updates
+        await Promise.all([sender.save(), agent.save(), admin.save(), transaction.save()]);
+
+        res.status(200).json({
+            msg: "Cash-out successful!",
+            transactionId: transaction._id,
+            senderBalance: sender.balance,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: "Server error" });
+    }
+});
 
 app.listen(port, () => {
     console.log(`Server running from ${port}`);

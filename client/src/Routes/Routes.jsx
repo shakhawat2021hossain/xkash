@@ -4,6 +4,7 @@ import Login from '../Pages/Auth/Login'
 import Register from '../Pages/Auth/Register'
 import Home from '../Pages/Home/Home'
 import SendMoney from '../Pages/User/SendMoney'
+import CashOut from '../Pages/User/CashOut'
 
 export const router = createBrowserRouter([
     {
@@ -17,6 +18,10 @@ export const router = createBrowserRouter([
             {
                 path: '/send-money',
                 element: <SendMoney />
+            },
+            {
+                path: '/cashout',
+                element: <CashOut />
             },
         ]
     },

@@ -12,6 +12,7 @@ const corsOptions = {
     origin: [
         'http://localhost:5173',
         'http://localhost:5174',
+        'https://xkash-by-shakhawat.web.app'
     ],
     credentials: true,
     optionSuccessStatus: 200,
@@ -37,6 +38,15 @@ const verifyToken = (req, res, next) => {
             return res.status(403).json({ msg: "Invalid token" });
         }
         // console.log("verifytoken", decoded);
+
+        const user = await Account.findById(decoded.id);
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        if (user.activeSessionToken !== token) {
+            return res.status(401).json({ msg: 'Session expired. Please log in again.' });
+        }
 
         req.userId = decoded.id;
         next();
@@ -74,7 +84,8 @@ const accountSchema = new mongoose.Schema({
     isApproved: { type: Boolean, default: true },
     isBlocked: { type: Boolean, default: false },
     balance: Number,
-    income: { type: Number, default: 0 }
+    income: { type: Number, default: 0 },
+    activeSessionToken: { type: String, default: null },
 });
 const Account = mongoose.model("Account", accountSchema)
 
@@ -98,31 +109,41 @@ app.get('/', (req, res) => {
 
 app.post('/register', async (req, res) => {
     const newUser = req.body;
-    // console.log(newUser);
-    const { name, email, pin, mobile, nid, accountType } = newUser
+    console.log(newUser);
+    const { name, email, pin, mobile, nid, accountType } = newUser;
+    try {
+        const isExist = await Account.findOne({ $or: [{ mobile }, { email }, { nid }] })
+        if (isExist) return res.json({ msg: 'Mobile number, email, or NID already exists' });
 
-    const isExist = await Account.findOne({ $or: [{ mobile }, { email }, { nid }] })
-    if (isExist) return res.json({ msg: 'Mobile number, email, or NID already exists' });
+        const salt = await bcrypt.genSalt(10)
+        const hashedPin = await bcrypt.hash(pin, salt)
 
-    const salt = await bcrypt.genSalt(10)
-    const hashedPin = await bcrypt.hash(pin, salt)
+        const user = new Account({ name, email, pin: hashedPin, mobile, nid, role: accountType })
+        if (accountType === 'user') user.balance = 40;
+        if (accountType === 'agent') {
+            user.balance = 0;
+            user.isApproved = false;
+        }
 
-    const user = new Account({ name, email, pin: hashedPin, mobile, nid, role: accountType })
-    if (accountType === 'user') user.balance = 40;
-    if (accountType === 'agent') {
-        user.balance = 0;
-        user.isApproved = false;
+        await user.save()
+
+        const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" })
+        user.activeSessionToken = token;
+        await user.save();
+
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+        }).json({ success: true, user });
+    }
+    catch (error) {
+        console.error('Registration Error:', error);
+        return res.status(500).json({ msg: 'Internal Server Error' });
+
     }
 
-    await user.save()
 
-    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" })
-
-    res.cookie('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-    }).json({ success: true, user });
 })
 
 app.post('/login', async (req, res) => {
@@ -136,6 +157,9 @@ app.post('/login', async (req, res) => {
         if (!match) return res.json({ msg: "invalid credentials" })
 
         const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" })
+        user.activeSessionToken = token;
+
+        await user.save()
 
         res.cookie('token', token, {
             httpOnly: true,
@@ -165,6 +189,15 @@ app.get('/protected', verifyToken, async (req, res) => {
 
 app.post('/logout', async (req, res) => {
     try {
+        const token = req.cookies?.token;
+        if (token) {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const user = await Account.findById(decoded.id);
+            if (user) {
+                user.activeSessionToken = null;
+                await user.save();
+            }
+        }
         res
             .clearCookie('token', {
                 maxAge: 0,
@@ -495,6 +528,24 @@ app.get('/system-stats', verifyToken, verifyAdmin, async (req, res) => {
             adminIncome: admin.income,
             totalMoneyInSystem: totalMoney,
         });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: 'Server error' });
+    }
+});
+
+app.get('/transactions', verifyToken, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const transactions = await Transaction.find({
+            $or: [{ sender: userId }, { receiver: userId }],
+        })
+            .sort({ timestamp: -1 }) // Sort by most recent first
+            .limit(100) // Limit to 100 transactions
+            .populate('sender', 'name mobile role')
+            .populate('receiver', 'name mobile role');
+
+        res.status(200).json(transactions);
     } catch (error) {
         console.error(error);
         res.status(500).json({ msg: 'Server error' });

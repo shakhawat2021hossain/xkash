@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import useAxiosPublic from "../../Hooks/useAxiosPublic";
 import toast from "react-hot-toast";
+import { useMutation } from "@tanstack/react-query";
 
 const Register = () => {
   const axiosPublic = useAxiosPublic()
@@ -16,15 +17,27 @@ const Register = () => {
 
   const [accountType, setAccountType] = useState("user");
 
-  const onSubmit = async (data) => {
-    const accountInfo = { ...data, accountType }
-    console.log(accountInfo);
-    try {
-
-      const result = await axiosPublic.post('/register', accountInfo)
+  const { mutateAsync } = useMutation({
+    mutationFn: async (info) => {
+      const { data } = await axiosPublic.post('/register', info)
+      console.log(data);
+      return data
+    },
+    onSuccess: (data) => {
+      console.log(data);
       toast.success("Register Successfully")
       navigate('/')
-      console.log(result);
+    },
+    onError: (data) => {
+      console.log(data);
+    },
+  })
+
+  const onSubmit = async (data) => {
+    const accountInfo = { ...data, accountType }
+    // console.log(accountInfo);
+    try {
+      await mutateAsync(accountInfo)
 
     }
     catch (err) {

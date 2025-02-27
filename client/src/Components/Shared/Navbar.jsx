@@ -39,7 +39,7 @@ const Navbar = () => {
         if (!user || isLoading) {
             return [
                 { to: "/login", label: "Login", isButton: false },
-                { to: "/register", label: "Register", isButton: true },
+                { to: "/register", label: "Register", isButton: false },
             ];
         }
 
@@ -47,7 +47,7 @@ const Navbar = () => {
         switch (user.role) {
             case "user":
                 return [
-                    { to: "/dashboard", label: "Dashboard", isButton: false },
+                    { to: "/transactions", label: "Transactions", isButton: false },
                     { to: "/send-money", label: "Send Money", isButton: false },
                     { to: "/cashout", label: "Cash Out", isButton: false },
                     { to: "/profile", label: "Profile", isButton: false },

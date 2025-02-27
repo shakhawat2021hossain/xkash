@@ -12,6 +12,7 @@ import PrivateRoute from './PrivateRoute'
 import AdminRoute from './AdminRoute'
 import AgentRoute from './AgentRoute'
 import AdminDashboard from '../Pages/Admin/AdminDashboard'
+import Transactions from '../Pages/User/Transactions'
 
 export const router = createBrowserRouter([
     {
@@ -45,6 +46,10 @@ export const router = createBrowserRouter([
             {
                 path: '/admin',
                 element: <AdminRoute><AdminDashboard /></AdminRoute>
+            },
+            {
+                path: '/transactions',
+                element: <PrivateRoute><Transactions /></PrivateRoute>
             },
         ]
     },

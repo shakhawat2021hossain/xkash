@@ -6,9 +6,11 @@ import { useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import Loading from "../../Components/Shared/Loading";
 import { useNavigate } from "react-router-dom";
+import useBalance from "../../Hooks/useBalance";
 
 const SendMoney = () => {
     const navigate = useNavigate()
+    const { refetch } = useBalance()
     const { user, isLoading: loading } = useAuth();
     const axiosPublic = useAxiosPublic();
     const {
@@ -18,7 +20,7 @@ const SendMoney = () => {
         formState: { errors },
     } = useForm();
 
-    // Send money mutation
+    // Send money 
     const { mutateAsync, isLoading } = useMutation({
         mutationFn: async (transaction) => {
             const { data } = await axiosPublic.post("/send-money", transaction);
@@ -27,6 +29,7 @@ const SendMoney = () => {
         },
         onSuccess: (data) => {
             toast.success(`Money sent successfully! Transaction ID: ${data.transactionId}`);
+            refetch()
             navigate('/')
             reset();
         },
@@ -39,12 +42,18 @@ const SendMoney = () => {
     // Handle form submission
     const onSubmit = async (data) => {
         const { amount, recipientMobile } = data;
-        if (amount < user?.balance) {
-            await mutateAsync({ amount, recipientMobile });
+        try{
 
+            if (amount < user?.balance) {
+                await mutateAsync({ amount, recipientMobile });
+    
+            }
+            else if (user?.balance < amount) {
+                toast.error("Don't have sufficient amount")
+            }
         }
-        else if (user?.balance < amount) {
-            toast.error("Don't have sufficient amount")
+        catch(err){
+            console.log(err);
         }
     };
 

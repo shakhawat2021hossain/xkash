@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import useAxiosPublic from '../../Hooks/useAxiosPublic';
 import toast from 'react-hot-toast';
+import { Link } from 'react-router-dom';
 
 const UserManagement = () => {
     const axiosPublic = useAxiosPublic()
@@ -43,6 +44,11 @@ const UserManagement = () => {
     const handleToggleBlock = async (id, currentStatus) => {
         await mutateAsync({ id, isBlocked: !currentStatus });
     };
+
+    const handleDetails = async(id) =>{
+        console.log(id);
+
+    }
 
     return (
         <div className="max-w-5xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
@@ -103,6 +109,7 @@ const UserManagement = () => {
                                 <th className="p-2 text-left">Income</th>
                                 <th className="p-2 text-left">Status</th>
                                 <th className="p-2 text-left">Action</th>
+                                <th className="p-2 text-left">Transactions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -133,6 +140,15 @@ const UserManagement = () => {
                                             >
                                                 {user?.isBlocked ? 'Unblock' : 'Block'}
                                             </button>
+                                        </td>
+                                        <td className="p-2">
+                                            <Link
+                                            to={`/view-transactions/${user?._id}`}
+                                                onClick={() => handleDetails(user?._id)}
+                                                className="py-1 px-3 rounded-md bg-blue-400"
+                                            >
+                                                View
+                                            </Link>
                                         </td>
                                     </tr>
                                 ))

@@ -20,7 +20,6 @@ const SendMoney = () => {
         formState: { errors },
     } = useForm();
 
-    // Send money 
     const { mutateAsync, isLoading } = useMutation({
         mutationFn: async (transaction) => {
             const { data } = await axiosPublic.post("/send-money", transaction);
@@ -34,27 +33,24 @@ const SendMoney = () => {
             reset();
         },
         onError: (error) => {
-            console.log(error);
-            toast.error("Failed to send money");
+            if (error.response) {
+                toast.error(error.response?.data?.msg || "Transaction failed");
+            } else {
+                toast.error("An unexpected error occurred.");
+            }
         },
     });
 
     // Handle form submission
     const onSubmit = async (data) => {
         const { amount, recipientMobile } = data;
-        try{
 
-            if (amount < user?.balance) {
-                await mutateAsync({ amount, recipientMobile });
-    
-            }
-            else if (user?.balance < amount) {
-                toast.error("Don't have sufficient amount")
-            }
+        if (amount > user?.balance) {
+            toast.error("Don't have sufficient balance");
+            return;
         }
-        catch(err){
-            console.log(err);
-        }
+        await mutateAsync({ amount, recipientMobile });
+
     };
 
     if (loading) return <Loading />

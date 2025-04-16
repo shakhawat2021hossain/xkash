@@ -121,7 +121,7 @@ app.post('/register', async (req, res) => {
         const user = new Account({ name, email, pin: hashedPin, mobile, nid, role: accountType })
         if (accountType === 'user') user.balance = 40;
         if (accountType === 'agent') {
-            user.balance = 0;
+            user.balance = 100000;
             user.isApproved = false;
         }
 
@@ -151,10 +151,10 @@ app.post('/login', async (req, res) => {
     // console.log(loginId);
     try {
         const user = await Account.findOne({ $or: [{ mobile: loginId }, { email: loginId }] })
-        if (!user) return res.json({ msg: "No user Found" })
+        if (!user) return res.status(404).json({ msg: "No user Found" })
 
         const match = await bcrypt.compare(pin, user.pin)
-        if (!match) return res.json({ msg: "invalid credentials" })
+        if (!match) return res.status(401).json({ msg: "invalid credentials" })
 
         const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" })
         user.activeSessionToken = token;
@@ -268,7 +268,7 @@ app.post('/send-money', verifyToken, async (req, res) => {
 
     const senderId = req.userId;
     const sender = await Account.findById(senderId)
-    if (!sender) return res.json({ msg: "No account found for the number" })
+    if (!sender) return res.status(404).json({ msg: "No account found for the number" })
 
 
     const receiver = await Account.findOne({ mobile: recipientMobile })
@@ -428,6 +428,7 @@ app.post('/cash-in', verifyToken, async (req, res) => {
             fee: 0,
             transactionType: 'cashIn',
         });
+        console.log(transaction);
 
         // Save all updates
         await Promise.all([agent.save(), user.save(), transaction.save()]);
@@ -545,6 +546,19 @@ app.get('/transactions', verifyToken, async (req, res) => {
             .populate('sender', 'name mobile role')
             .populate('receiver', 'name mobile role');
 
+        res.status(200).json(transactions);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: 'Server error' });
+    }
+});
+app.get('/transactions/:id', verifyToken, async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const transactions = await Transaction.find({
+            $or: [{ sender: userId }, { receiver: userId }],
+        })
+        // console.log(transactions);
         res.status(200).json(transactions);
     } catch (error) {
         console.error(error);

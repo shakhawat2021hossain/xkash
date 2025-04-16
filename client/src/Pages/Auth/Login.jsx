@@ -3,6 +3,8 @@ import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import useAxiosPublic from "../../Hooks/useAxiosPublic";
 import toast from "react-hot-toast";
+import { useMutation } from "@tanstack/react-query";
+import { ImSpinner9 } from "react-icons/im";
 
 const Login = () => {
   const axiosPublic = useAxiosPublic()
@@ -14,23 +16,32 @@ const Login = () => {
     formState: { errors },
   } = useForm();
 
+
+  const { mutateAsync, isPending } = useMutation({
+    mutationFn: async (info) => {
+      const { data } = await axiosPublic.post('/login', info)
+      // console.log(data);
+      return data
+    },
+    onSuccess: (data) => {
+      // console.log(data);
+      toast.success(data?.msg || "Login Successfully")
+      navigate('/')
+    },
+    onError: (data) => {
+      toast.error(data?.msg || "Login Failed")
+    },
+  })
+
   const onSubmit = async (data) => {
     const loginInfo = data;
-    // console.log(loginInfo);
     try {
-      const { data } = await axiosPublic.post('/login', loginInfo);
-      if (data.success) {
-        toast.success("logged in")
-        navigate('/')
-      }
-      else {
-        toast.error(data?.msg || "Login Failed")
-      }
+      await mutateAsync(loginInfo)
+
     }
     catch (err) {
       console.log(err);
     }
-
   };
 
   return (
@@ -77,9 +88,10 @@ const Login = () => {
           {/* Submit Button */}
           <button
             type="submit"
+            disabled={isPending}
             className="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primary-dark transition-colors"
           >
-            Login
+            {isPending ? <ImSpinner9 className="animate-spin mx-auto" /> : 'Login'}
           </button>
         </form>
         <p className="mt-4 text-center text-text-muted">

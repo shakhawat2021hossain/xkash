@@ -4,10 +4,12 @@ import useAxiosPublic from '../../Hooks/useAxiosPublic';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { useMutation } from '@tanstack/react-query';
+import useBalance from '../../Hooks/useBalance';
 
 const CashOut = () => {
     const navigate = useNavigate();
     const axiosPublic = useAxiosPublic()
+    const {refetch} = useBalance()
     const {
         register,
         handleSubmit,
@@ -22,6 +24,7 @@ const CashOut = () => {
         },
         onSuccess: async () => {
             toast.success("Cashout Successful")
+            refetch()
             navigate('/')
         }
     })

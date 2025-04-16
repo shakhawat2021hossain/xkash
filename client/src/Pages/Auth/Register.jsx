@@ -4,6 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 import useAxiosPublic from "../../Hooks/useAxiosPublic";
 import toast from "react-hot-toast";
 import { useMutation } from "@tanstack/react-query";
+import { ImSpinner9 } from "react-icons/im";
+
 
 const Register = () => {
   const axiosPublic = useAxiosPublic()
@@ -17,7 +19,7 @@ const Register = () => {
 
   const [accountType, setAccountType] = useState("user");
 
-  const { mutateAsync } = useMutation({
+  const { mutateAsync, isPending } = useMutation({
     mutationFn: async (info) => {
       const { data } = await axiosPublic.post('/register', info)
       console.log(data);
@@ -25,7 +27,7 @@ const Register = () => {
     },
     onSuccess: (data) => {
       console.log(data);
-      toast.success("Register Successfully")
+      toast.success(data.msg || "Register Successfully")
       navigate('/')
     },
     onError: (data) => {
@@ -170,9 +172,11 @@ const Register = () => {
           {/* Submit Button */}
           <button
             type="submit"
+            disabled={isPending}
             className="w-full bg-primary text-white py-2 rounded-md hover:bg-primary-dark"
+
           >
-            Register
+            {isPending ? <ImSpinner9 className="animate-spin mx-auto" /> : "Register"}
           </button>
         </form>
 

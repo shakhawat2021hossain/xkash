@@ -13,6 +13,8 @@ import AdminRoute from './AdminRoute'
 import AgentRoute from './AgentRoute'
 import AdminDashboard from '../Pages/Admin/AdminDashboard'
 import Transactions from '../Pages/User/Transactions'
+import TransactionsDetails from '../Pages/Admin/TransactionsDetails'
+import Profile from '../Pages/Profile'
 
 export const router = createBrowserRouter([
     {
@@ -50,6 +52,14 @@ export const router = createBrowserRouter([
             {
                 path: '/transactions',
                 element: <PrivateRoute><Transactions /></PrivateRoute>
+            },
+            {
+                path: '/view-transactions/:id',
+                element: <PrivateRoute><TransactionsDetails /></PrivateRoute>
+            },
+            {
+                path: '/profile',
+                element: <PrivateRoute><Profile /></PrivateRoute>
             },
         ]
     },

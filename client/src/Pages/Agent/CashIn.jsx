@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import useBalance from '../../Hooks/useBalance';
+import useAuth from '../../Hooks/useAuth';
 
 const CashIn = () => {
     const axiosPublic = useAxiosPublic()
@@ -17,6 +18,8 @@ const CashIn = () => {
     } = useForm();
 
     const { refetch } = useBalance()
+    const {user} = useAuth()
+    console.log(user);
     const { mutateAsync, isLoading } = useMutation({
         mutationFn: async (transaction) => {
             const { data } = await axiosPublic.post('/cash-in', transaction)
@@ -27,14 +30,21 @@ const CashIn = () => {
             toast.success("Cash In Successfull");
             await refetch();
             navigate('/')
-        }
+        },
+        onError: async (data) => {
+            toast.error(data.msg || "Something Went wrong");
+        },
 
     })
 
     // Handle form submission
     const onSubmit = async (data) => {
-        // console.log(data);
+        console.log(data);
         try {
+            if(!user?.isApproved){
+                toast.error("Sorry you are not approved agent.")
+                toast.error("Wait for admin Approval")
+            }
             await mutateAsync(data)
         } catch (error) {
             console.log(error);
